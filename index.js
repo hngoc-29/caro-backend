@@ -4,9 +4,6 @@ const { platform } = require("process");
 require(`dotenv`).config();
 
 const app = express();
-app.set("view engine", "ejs");
-app.set("views", "./views");
-app.use(express.static("public"));
 
 // ✅ Cấu hình CORS
 app.use(
@@ -22,7 +19,7 @@ server.listen(3001, () => console.log("Server is running on port 3001"));
 // ✅ Cấu hình Socket.IO với CORS
 const io = require("socket.io")(server, {
     cors: {
-        origin: "http://localhost:3000", // Thay bằng domain frontend của bạn
+        origin: process.env.ACCEPT_DOMAIN, // Thay bằng domain frontend của bạn
         methods: ["GET", "POST"],
     },
 });
@@ -213,6 +210,3 @@ io.on("connection", (socket) => {
         }
     });
 });
-
-// Route EJS
-app.get("/", (req, res) => res.render("home"));
