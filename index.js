@@ -12,9 +12,16 @@ const server = require("http").Server(app);
 server.listen(3001, () => console.log("Server is running on port 3001"));
 
 // ✅ Cấu hình Socket.IO với CORS
+const allowedOrigins = ["https://caro-frontend.onrender.com", "https://caro-0u7d.onrender.com", "http://localhost:3000"];
 const io = require("socket.io")(server, {
     cors: {
-        origin: 'https://caro-frontend.onrender.com', // Thay bằng domain frontend của bạn
+        origin: (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
         methods: ["GET", "POST"],
     },
 });
