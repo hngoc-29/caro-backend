@@ -14,7 +14,7 @@ server.listen(3001, () => console.log("Server is running on port 3001"));
 // ✅ Cấu hình Socket.IO với CORS
 const io = require("socket.io")(server, {
     cors: {
-        origin: 'https://caro-frontend.onrender.com/', // Thay bằng domain frontend của bạn
+        origin: 'https://caro-frontend.onrender.com', // Thay bằng domain frontend của bạn
         methods: ["GET", "POST"],
     },
 });
