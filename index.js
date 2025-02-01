@@ -6,12 +6,7 @@ require(`dotenv`).config();
 const app = express();
 
 // ✅ Cấu hình CORS
-app.use(
-    cors({
-        origin: process.env.ACCEPT_DOMAIN, // Thay bằng domain frontend của bạn
-        methods: ["GET", "POST"],
-    })
-);
+app.use(cors());
 
 const server = require("http").Server(app);
 server.listen(3001, () => console.log("Server is running on port 3001"));
