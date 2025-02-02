@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { platform } = require("process");
-require(`dotenv`).config();
+require('dotenv').config();
 
 const app = express();
 
@@ -41,6 +41,7 @@ const room = {};
 const listUserName = [];
 
 //fnc handle
+
 const handleClose = (socket) => {
     const code = listPlayer[socket.id];
     if (code) {
@@ -53,8 +54,8 @@ const handleClose = (socket) => {
 
 const updateUserName = (socket, username, preUserName) => {
     if (username !== preUserName) {
-        if (listUserName.indexOf(username) >= 0 || username.trim() === ``) {
-            socket.emit(`error`, `Tên không hợp lệ hoặc đã được sử dụng`)
+        if (listUserName.indexOf(username) >= 0 || username.trim() === '') {
+            socket.emit('error', 'Tên không hợp lệ hoặc đã được sử dụng');
             return false;
         } else {
             listUserName.push(username);
@@ -71,9 +72,9 @@ const updateUserName = (socket, username, preUserName) => {
 
 const outRoom = async (socket) => {
     const code = listPlayer[socket.id];
-    socket.emit(`error`, `Bạn đã thua do rời trận`);
+    socket.emit('error', 'Bạn đã thua do rời trận');
     room[code].splice(room[code].indexOf(socket.id), 1);
-    io.to(room[code][0]).emit(`return-kq`, `WIN`);
+    io.to(room[code][0]).emit('return-kq', 'WIN');
     delete listPlayer[room[code][0]];
     delete listPlayer[socket.id];
 }
@@ -81,7 +82,7 @@ const outRoom = async (socket) => {
 // ✅ Lắng nghe sự kiện kết nối
 io.on("connection", (socket) => {
     console.log("🟢 Có người kết nối:", socket.id);
-    socket.on(`find-player`, (username) => {
+    socket.on('find-player', (username) => {
         if (updateUserName(socket, username, socket.username)) {
             if (userWait.length === 0) {
                 const code = randomCode();
@@ -90,7 +91,7 @@ io.on("connection", (socket) => {
                 userNameWait[socket.id] = username;
                 socket.join(code);
                 room[code] = [socket.id];
-                socket.emit(`find-player-wait`);
+                socket.emit('find-player-wait');
                 console.log(`User ${socket.id} joined room: ${code}`);
             } else {
                 const waitingUser = userWait.shift();
@@ -99,7 +100,7 @@ io.on("connection", (socket) => {
                 room[roomId].push(socket.id);
                 listPlayer[socket.id] = listPlayer[waitingUser];
                 console.log(`User ${socket.id} joined room: ${roomId}`);
-                io.to(roomId).emit(`find-player-success`, {
+                io.to(roomId).emit('find-player-success', {
                     roomId: roomId,
                     player1: userNameWait[waitingUser],
                     player2: username
@@ -110,11 +111,11 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on(`close-wait`, () => {
+    socket.on('close-wait', () => {
         handleClose(socket);
     });
 
-    socket.on(`create-room`, (username) => {
+    socket.on('create-room', (username) => {
         if (updateUserName(socket, username, socket.username)) {
             const code = randomCode();
             listPlayer[socket.id] = code;
@@ -122,72 +123,72 @@ io.on("connection", (socket) => {
             socket.join(code);
             room[code] = [socket.id];
             console.log(`User ${socket.id} created room: ${code}`);
-            socket.emit(`room-created`, { roomId: code, player1: username, ower: username });
+            socket.emit('room-created', { roomId: code, player1: username, ower: username });
         }
     });
 
-    socket.on(`join-room`, ({ username, roomId }) => {
+    socket.on('join-room', ({ username, roomId }) => {
         if (updateUserName(socket, username, socket.username)) {
             if (room[roomId] && room[roomId].length === 1) {
                 socket.join(roomId);
                 room[roomId].push(socket.id);
                 listPlayer[socket.id] = roomId;
                 console.log(`User ${socket.id} joined room: ${roomId}`);
-                socket.emit(`join-success`, Math.floor(Math.random() * 10) + ``);
-                io.to(roomId).emit(`find-player-success`, {
+                socket.emit('join-success', Math.floor(Math.random() * 10) + '');
+                io.to(roomId).emit('find-player-success', {
                     ower: userNameWait[room[roomId][0]],
                     roomId: roomId,
                     player1: userNameWait[room[roomId][0]],
                     player2: username,
                 });
             } else {
-                socket.emit(`error`, `Room not found or already full`);
+                socket.emit('error', 'Room not found or already full');
             }
         }
     });
 
-    socket.on(`start-game`, (roomId) => {
+    socket.on('start-game', (roomId) => {
         const icon = Math.floor(Math.random() * 2);
         socket.player1 = Math.floor(Math.random() * 2);
         socket.player2 = socket.player1 ? 0 : 1;
-        io.to(roomId).emit(`start-game-success`, {
+        const isXNext = Math.floor(Math.random() * 2);
+        io.to(roomId).emit('start-game-success', {
             ower: false,
             board: Array(9).fill(null),
             icon: icon,
-            player1: socket.player1
+            player1: socket.player1,
+            isXNext,
+            time: 10
         });
     });
 
-    socket.on(`update-board`, (data) => {
-        if (data.board.every(e => e !== null)) {
-            const icon = Math.floor(Math.random() * 2);
-            io.to(data.roomId).emit(`start-game-success`, {
-                ower: false,
-                board: Array(9).fill(null),
-                icon: icon,
-                youNext: icon,
-                player1: Math.floor(Math.random() * 2)
-            });
-            return;
-        }
-        io.to(data.roomId).emit(`update-board-success`, {
+    socket.on('update-board', (data) => {
+        io.to(data.roomId).emit('update-board-success', {
             board: data.board,
-            isXNext: data.isXNext
+            isXNext: data.isXNext,
+            timeLeft: 10
         });
     });
 
-    socket.on(`check-kq`, ({ winner, roomId }) => {
-        const icon = [`X`, `O`];
+    socket.on("update-time", ({ time, roomId }) => {
+        if (room[roomId]) {
+            room[roomId].timeLeft = time;
+            io.to(roomId).emit("update-time-noti", time);
+        }
+    });
+
+    socket.on('check-kq', ({ winner, roomId }) => {
+        const icon = ['X', 'O'];
         room[roomId].forEach(element => {
             if (socket.id === element) {
-                io.to(element).emit(`return-kq`, winner === icon[socket.player1] ? `WIN` : `LOSE`);
+                io.to(element).emit('return-kq', winner === icon[socket.player1] ? 'WIN' : 'LOSE');
             } else {
-                io.to(element).emit(`return-kq`, winner === icon[socket.player2] ? `WIN` : `LOSE`);
+                io.to(element).emit('return-kq', winner === icon[socket.player2] ? 'WIN' : 'LOSE');
             }
         });
     });
 
-    socket.on(`out-room`, () => {
+    socket.on('out-room', () => {
         outRoom(socket);
         io.sockets.adapter.rooms.delete(socket);
     });
@@ -212,3 +213,19 @@ io.on("connection", (socket) => {
         }
     });
 });
+
+// Helper function to calculate the winner
+const calculateWinner = (squares) => {
+    const lines = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6],
+    ];
+    for (let i = 0; i < lines.length; i++) {
+        const [a, b, c] = lines[i];
+        if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+            return squares[a];
+        }
+    }
+    return null;
+};
