@@ -163,11 +163,27 @@ io.on("connection", (socket) => {
     });
 
     socket.on('update-board', (data) => {
-        io.to(data.roomId).emit('update-board-success', {
-            board: data.board,
-            isXNext: data.isXNext,
-            timeLeft: 10
-        });
+        const { isDraw, winner } = calculateWinner(data.board);
+        if (winner) {
+            console.log(data.board, winner, data.player1)
+            const icon = [data.player1, data.player2];
+            room[data.roomId].forEach((element, index) => {
+                io.to(element).emit('return-kq', winner === icon[index] ? 'WIN' : 'LOSE');
+
+            });
+        } else if (isDraw) {
+            io.to(data.roomId).emit('update-board-success', {
+                board: Array(9).fill(null),
+                isXNext: data.isXNext,
+                timeLeft: 10
+            });
+        } else {
+            io.to(data.roomId).emit('update-board-success', {
+                board: data.board,
+                isXNext: data.isXNext,
+                timeLeft: 10
+            });
+        }
     });
 
     socket.on("update-time", ({ time, roomId }) => {
@@ -175,17 +191,6 @@ io.on("connection", (socket) => {
             room[roomId].timeLeft = time;
             io.to(roomId).emit("update-time-noti", time);
         }
-    });
-
-    socket.on('check-kq', ({ winner, roomId }) => {
-        const icon = ['X', 'O'];
-        room[roomId].forEach(element => {
-            if (socket.id === element) {
-                io.to(element).emit('return-kq', winner === icon[socket.player1] ? 'WIN' : 'LOSE');
-            } else {
-                io.to(element).emit('return-kq', winner === icon[socket.player2] ? 'WIN' : 'LOSE');
-            }
-        });
     });
 
     socket.on('out-room', () => {
@@ -224,8 +229,10 @@ const calculateWinner = (squares) => {
     for (let i = 0; i < lines.length; i++) {
         const [a, b, c] = lines[i];
         if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-            return squares[a];
+            return { winner: squares[a] };
         }
     }
-    return null;
+    const isDraw = squares.every(square => square !== null);
+
+    return { winner: null, isDraw };
 };
